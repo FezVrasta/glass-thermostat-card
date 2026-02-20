@@ -419,22 +419,34 @@ class GlassThermostatCard extends HTMLElement {
           justify-content: center;
         }
 
-        .slider-box {
+        .slider-wrapper {
           width: 100%;
           height: 240px;
+          border-radius: 28px;
+          box-shadow:
+            0 5px 10px -8px rgba(0,0,0,0.7),
+            0 5px 20px 10px rgba(0,0,0,0.3);
+          transition: height 0.3s ease;
+        }
+
+        .card.expanded .slider-wrapper {
+          height: 100%;
+        }
+
+        .slider-box {
+          width: 100%;
+          height: 100%;
           background: rgba(255, 255, 255, 0.15);
           backdrop-filter: blur(20px) saturate(180%);
           -webkit-backdrop-filter: blur(20px) saturate(180%);
           box-shadow:
             inset 0 1px 1px rgba(255, 255, 255, 0.3),
-            inset 0 -1px 1px rgba(0, 0, 0, 0.1),
-            0 8px 32px rgba(0, 0, 0, 0.2);
+            inset 0 -1px 1px rgba(0, 0, 0, 0.1);
           position: relative;
           cursor: pointer;
           overflow: hidden;
           contain: layout style;
           transform: translateZ(0);
-          transition: height 0.3s ease;
           -webkit-tap-highlight-color: transparent;
           /* Squircle mask for proper clipping */
           -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M0,28 C0,6 6,0 28,0 L72,0 C94,0 100,6 100,28 L100,72 C100,94 94,100 72,100 L28,100 C6,100 0,94 0,72 Z' fill='black'/%3E%3C/svg%3E");
@@ -446,7 +458,6 @@ class GlassThermostatCard extends HTMLElement {
         }
 
         .card.expanded .slider-box {
-          height: 100%;
           touch-action: none;
           /* Taller squircle for expanded state */
           -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M0,28 C0,6 6,0 28,0 L72,0 C94,0 100,6 100,28 L100,92 C100,114 94,120 72,120 L28,120 C6,120 0,114 0,92 Z' fill='black'/%3E%3C/svg%3E");
@@ -559,11 +570,13 @@ class GlassThermostatCard extends HTMLElement {
           </div>
 
           <div class="slider-container">
-            <div class="slider-box">
-              <div class="slider-fill" style="transform: scaleY(${fillRatio})"></div>
-              <div class="slider-content">
-                <div class="target-temp" style="color: ${this._expanded && fillRatio > 0.75 ? '#3A3A3C' : 'white'}">
-                  ${targetWhole}<span class="decimal">.${targetDecimal}</span><span class="degree">⭘</span>
+            <div class="slider-wrapper">
+              <div class="slider-box">
+                <div class="slider-fill" style="transform: scaleY(${fillRatio})"></div>
+                <div class="slider-content">
+                  <div class="target-temp" style="color: ${this._expanded && fillRatio > 0.75 ? '#3A3A3C' : 'white'}">
+                    ${targetWhole}<span class="decimal">.${targetDecimal}</span><span class="degree">⭘</span>
+                  </div>
                 </div>
               </div>
             </div>
