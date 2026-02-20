@@ -348,7 +348,6 @@ class GlassThermostatCard extends HTMLElement {
           box-sizing: border-box;
           font-family: -apple-system, BlinkMacSystemFont, sans-serif;
           color: white;
-          overflow: hidden;
           contain: layout style paint;
         }
 
