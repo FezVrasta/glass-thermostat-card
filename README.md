@@ -76,6 +76,3 @@ The card automatically adjusts its background gradient based on HVAC state:
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
-
-> [!IMPORTANT]
-> This card relies on advanced SVG filters and CSS features for its glass effects. For best results, use a **Chromium-based browser** (Chrome, Edge, Brave, etc.). Some visual features may be missing or look different in Firefox or Safari.
