@@ -1,9 +1,10 @@
 /**
  * Glass Thermostat Card - A liquid glass style thermostat card for Home Assistant
  * Features dynamic background colors, collapsible slider, and smooth animations
+ * Optional: Load liquid-glass.js for enhanced refraction effect
  */
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.5-beta.1';
 
 class GlassThermostatCard extends HTMLElement {
   constructor() {
@@ -17,6 +18,7 @@ class GlassThermostatCard extends HTMLElement {
     this._boundOnMove = null;
     this._boundOnEnd = null;
     this._rendered = false;
+    this._liquidGlassEffect = null;
   }
 
   static getStubConfig() {
@@ -35,10 +37,12 @@ class GlassThermostatCard extends HTMLElement {
 
     // Only re-render if relevant entity states actually changed
     const entityId = this._config.entity;
-    const secondaryId = this._config.secondary_entity || this._config.power_entity;
+    const secondaryId =
+      this._config.secondary_entity || this._config.power_entity;
 
     const entityChanged = oldHass?.states[entityId] !== hass?.states[entityId];
-    const secondaryChanged = secondaryId && oldHass?.states[secondaryId] !== hass?.states[secondaryId];
+    const secondaryChanged =
+      secondaryId && oldHass?.states[secondaryId] !== hass?.states[secondaryId];
 
     if (entityChanged || secondaryChanged || !oldHass) {
       this._render();
@@ -68,6 +72,10 @@ class GlassThermostatCard extends HTMLElement {
     if (this._rafId) {
       cancelAnimationFrame(this._rafId);
     }
+    if (this._liquidGlassEffect) {
+      this._liquidGlassEffect.destroy();
+      this._liquidGlassEffect = null;
+    }
   }
 
   _getTemperatureFromPosition(clientY) {
@@ -75,7 +83,8 @@ class GlassThermostatCard extends HTMLElement {
     if (!slider) return null;
 
     const rect = slider.getBoundingClientRect();
-    const ratio = 1 - Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    const ratio =
+      1 - Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
 
     const entity = this._hass.states[this._config.entity];
     const minTemp = entity?.attributes.min_temp || 5;
@@ -89,14 +98,14 @@ class GlassThermostatCard extends HTMLElement {
   _setTemperature(temperature) {
     this._hass.callService('climate', 'set_temperature', {
       entity_id: this._config.entity,
-      temperature: temperature
+      temperature: temperature,
     });
   }
 
   _fireMoreInfo() {
     const event = new Event('hass-more-info', {
       bubbles: true,
-      composed: true
+      composed: true,
     });
     event.detail = { entityId: this._config.entity };
     this.dispatchEvent(event);
@@ -226,38 +235,87 @@ class GlassThermostatCard extends HTMLElement {
   _getColors(state, hvacAction) {
     const isHeating = hvacAction === 'heating';
     const isCooling = hvacAction === 'cooling';
-    const isHeatMode = state === 'heat' || state === 'heat_cool' || state === 'auto';
+    const isHeatMode =
+      state === 'heat' || state === 'heat_cool' || state === 'auto';
     const isCoolMode = state === 'cool';
 
     if (state === 'off') {
-      return { primary: '#888888', secondary: '#666666', accent: '#aaaaaa', dark: '#444444', shadow: '#333355' };
+      return {
+        primary: '#888888',
+        secondary: '#666666',
+        accent: '#aaaaaa',
+        dark: '#444444',
+        shadow: '#333355',
+      };
     } else if (isCooling) {
-      return { primary: '#4da6ff', secondary: '#0066cc', accent: '#66ccff', dark: '#003366', shadow: '#001a33' };
+      return {
+        primary: '#4da6ff',
+        secondary: '#0066cc',
+        accent: '#66ccff',
+        dark: '#003366',
+        shadow: '#001a33',
+      };
     } else if (isHeating) {
-      return { primary: '#ff4d4d', secondary: '#cc0000', accent: '#ff3333', dark: '#660000', shadow: '#330000' };
+      return {
+        primary: '#ff4d4d',
+        secondary: '#cc0000',
+        accent: '#ff3333',
+        dark: '#660000',
+        shadow: '#330000',
+      };
     } else if (isCoolMode) {
-      return { primary: '#66b3ff', secondary: '#3399ff', accent: '#99ccff', dark: '#004080', shadow: '#002244' };
+      return {
+        primary: '#66b3ff',
+        secondary: '#3399ff',
+        accent: '#99ccff',
+        dark: '#004080',
+        shadow: '#002244',
+      };
     } else if (isHeatMode) {
-      return { primary: '#ff9933', secondary: '#ff6600', accent: '#ffcc66', dark: '#994400', shadow: '#662200' };
+      return {
+        primary: '#ff9933',
+        secondary: '#ff6600',
+        accent: '#ffcc66',
+        dark: '#994400',
+        shadow: '#662200',
+      };
     } else {
-      return { primary: '#ff9933', secondary: '#ff6600', accent: '#ffcc66', dark: '#994400', shadow: '#662200' };
+      return {
+        primary: '#ff9933',
+        secondary: '#ff6600',
+        accent: '#ffcc66',
+        dark: '#994400',
+        shadow: '#662200',
+      };
     }
   }
 
   _getBackground(colors) {
-    return `url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' viewBox='0 0 600 600' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMidYMid slice'%3E%3Crect width='1000' height='600' fill='%23020202' /%3E%3Cdefs%3E%3Cfilter id='soft-glow' x='-50%25' y='-50%25' width='200%25' height='200%25'%3E%3CfeGaussianBlur in='SourceGraphic' stdDeviation='45' /%3E%3C/filter%3E%3Cfilter id='core-blur' x='-50%25' y='-50%25' width='200%25' height='200%25'%3E%3CfeGaussianBlur in='SourceGraphic' stdDeviation='25' /%3E%3C/filter%3E%3ClinearGradient id='main-beam' x1='0%25' y1='50%25' x2='100%25' y2='50%25'%3E%3Cstop offset='0%25' stop-color='${encodeURIComponent(colors.primary)}' stop-opacity='0.9'/%3E%3Cstop offset='40%25' stop-color='${encodeURIComponent(colors.secondary)}' stop-opacity='0.6'/%3E%3Cstop offset='100%25' stop-color='%23000000' stop-opacity='0'/%3E%3C/linearGradient%3E%3ClinearGradient id='cool-shadow' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='${encodeURIComponent(colors.secondary)}' stop-opacity='0.4'/%3E%3Cstop offset='60%25' stop-color='${encodeURIComponent(colors.shadow)}' stop-opacity='0.5'/%3E%3Cstop offset='100%25' stop-color='%23000000' stop-opacity='0.8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg transform='translate(500, 300) rotate(-40) translate(-500, -300)'%3E%3Crect x='450' y='150' width='400' height='300' fill='url(%23cool-shadow)' filter='url(%23soft-glow)' /%3E%3Crect x='150' y='50' width='300' height='500' fill='${encodeURIComponent(colors.dark)}' opacity='0.6' filter='url(%23soft-glow)' /%3E%3Crect x='350' y='100' width='250' height='500' fill='url(%23main-beam)' filter='url(%23core-blur)' /%3E%3Crect x='200' y='-100' width='200' height='400' fill='${encodeURIComponent(colors.accent)}' opacity='0.4' filter='url(%23soft-glow)' /%3E%3C/g%3E%3CradialGradient id='vignette' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='70%25' stop-color='%23000000' stop-opacity='0'/%3E%3Cstop offset='100%25' stop-color='%23000000' stop-opacity='0.6'/%3E%3C/radialGradient%3E%3Crect width='100%25' height='100%25' fill='url(%23vignette)' /%3E%3C/svg%3E")`;
+    return `url('data:image/svg+xml,%3Csvg width=%27100%25%27 height=%27100%25%27 viewBox=%270 0 600 600%27 xmlns=%27http://www.w3.org/2000/svg%27 preserveAspectRatio=%27xMidYMid slice%27%3E%3Crect width=%271000%27 height=%27600%27 fill=%27%23020202%27 /%3E%3Cdefs%3E%3Cfilter id=%27soft-glow%27 x=%27-50%25%27 y=%27-50%25%27 width=%27200%25%27 height=%27200%25%27%3E%3CfeGaussianBlur in=%27SourceGraphic%27 stdDeviation=%2745%27 /%3E%3C/filter%3E%3Cfilter id=%27core-blur%27 x=%27-50%25%27 y=%27-50%25%27 width=%27200%25%27 height=%27200%25%27%3E%3CfeGaussianBlur in=%27SourceGraphic%27 stdDeviation=%2725%27 /%3E%3C/filter%3E%3ClinearGradient id=%27main-beam%27 x1=%270%25%27 y1=%2750%25%27 x2=%27100%25%27 y2=%2750%25%27%3E%3Cstop offset=%270%25%27 stop-color=%27${encodeURIComponent(colors.primary)}%27 stop-opacity=%270.9%27/%3E%3Cstop offset=%2740%25%27 stop-color=%27${encodeURIComponent(colors.secondary)}%27 stop-opacity=%270.6%27/%3E%3Cstop offset=%27100%25%27 stop-color=%27%23000000%27 stop-opacity=%270%27/%3E%3C/linearGradient%3E%3ClinearGradient id=%27cool-shadow%27 x1=%270%25%27 y1=%270%25%27 x2=%27100%25%27 y2=%27100%25%27%3E%3Cstop offset=%270%25%27 stop-color=%27${encodeURIComponent(colors.secondary)}%27 stop-opacity=%270.4%27/%3E%3Cstop offset=%2760%25%27 stop-color=%27${encodeURIComponent(colors.shadow)}%27 stop-opacity=%270.5%27/%3E%3Cstop offset=%27100%25%27 stop-color=%27%23000000%27 stop-opacity=%270.8%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg transform=%27translate(500, 300) rotate(-40) translate(-500, -300)%27%3E%3Crect x=%27450%27 y=%27150%27 width=%27400%27 height=%27300%27 fill=%27url(%23cool-shadow)%27 filter=%27url(%23soft-glow)%27 /%3E%3Crect x=%27150%27 y=%2750%27 width=%27300%27 height=%27500%27 fill=%27${encodeURIComponent(colors.dark)}%27 opacity=%270.6%27 filter=%27url(%23soft-glow)%27 /%3E%3Crect x=%27350%27 y=%27100%27 width=%27250%27 height=%27500%27 fill=%27url(%23main-beam)%27 filter=%27url(%23core-blur)%27 /%3E%3Crect x=%27200%27 y=%27-100%27 width=%27200%27 height=%27400%27 fill=%27${encodeURIComponent(colors.accent)}%27 opacity=%270.4%27 filter=%27url(%23soft-glow)%27 /%3E%3C/g%3E%3CradialGradient id=%27vignette%27 cx=%2750%25%27 cy=%2750%25%27 r=%2750%25%27%3E%3Cstop offset=%2770%25%27 stop-color=%27%23000000%27 stop-opacity=%270%27/%3E%3Cstop offset=%27100%25%27 stop-color=%27%23000000%27 stop-opacity=%270.6%27/%3E%3C/radialGradient%3E%3Crect width=%27100%25%27 height=%27100%25%27 fill=%27url(%23vignette)%27 /%3E%3C/svg%3E')`;
   }
 
   _getStatusText(state, hvacAction) {
     const localize = (key, fallback) => this._hass.localize(key) || fallback;
 
     // Get localized state name
-    const modeName = localize(`component.climate.entity_component._.state.${state}`, state);
+    const modeName = localize(
+      `component.climate.entity_component._.state.${state}`,
+      state
+    );
 
     // Get localized hvac_action
-    const heatingText = localize('component.climate.entity_component._.state_attributes.hvac_action.heating', 'Heating');
-    const coolingText = localize('component.climate.entity_component._.state_attributes.hvac_action.cooling', 'Cooling');
-    const idleText = localize('component.climate.entity_component._.state_attributes.hvac_action.idle', 'Idle');
+    const heatingText = localize(
+      'component.climate.entity_component._.state_attributes.hvac_action.heating',
+      'Heating'
+    );
+    const coolingText = localize(
+      'component.climate.entity_component._.state_attributes.hvac_action.cooling',
+      'Cooling'
+    );
+    const idleText = localize(
+      'component.climate.entity_component._.state_attributes.hvac_action.idle',
+      'Idle'
+    );
 
     if (state === 'off') {
       return modeName;
@@ -287,14 +345,24 @@ class GlassThermostatCard extends HTMLElement {
     const state = entity.state;
 
     // Secondary info (generic entity display) - backwards compatible with power_entity
-    const secondaryEntityId = this._config.secondary_entity || this._config.power_entity;
-    const secondaryEntity = secondaryEntityId ? this._hass.states[secondaryEntityId] : null;
-    const secondaryValue = secondaryEntity ? parseFloat(secondaryEntity.state) : NaN;
-    const secondary = isNaN(secondaryValue) ? null : {
-      value: Math.round(secondaryValue),
-      unit: secondaryEntity.attributes.unit_of_measurement || '',
-      label: this._config.secondary_label || secondaryEntity.attributes.friendly_name || 'Value'
-    };
+    const secondaryEntityId =
+      this._config.secondary_entity || this._config.power_entity;
+    const secondaryEntity = secondaryEntityId
+      ? this._hass.states[secondaryEntityId]
+      : null;
+    const secondaryValue = secondaryEntity
+      ? parseFloat(secondaryEntity.state)
+      : NaN;
+    const secondary = isNaN(secondaryValue)
+      ? null
+      : {
+          value: Math.round(secondaryValue),
+          unit: secondaryEntity.attributes.unit_of_measurement || '',
+          label:
+            this._config.secondary_label ||
+            secondaryEntity.attributes.friendly_name ||
+            'Value',
+        };
 
     const targetWhole = Math.floor(targetTemp);
     const targetDecimal = Math.round((targetTemp % 1) * 10);
@@ -309,22 +377,49 @@ class GlassThermostatCard extends HTMLElement {
 
     // Only do full render once, then update values
     if (!this._rendered) {
-      this._renderFull(background, statusText, targetWhole, targetDecimal, fillRatio, currentWhole, currentDecimal, secondary);
+      this._renderFull(
+        background,
+        statusText,
+        targetWhole,
+        targetDecimal,
+        fillRatio,
+        currentWhole,
+        currentDecimal,
+        secondary
+      );
       this._rendered = true;
       this._setupInteraction();
+      this._applyGlassEffect();
     } else {
-      this._updateValues(statusText, targetWhole, targetDecimal, fillRatio, currentWhole, currentDecimal, secondary, background);
+      this._updateValues(
+        statusText,
+        targetWhole,
+        targetDecimal,
+        fillRatio,
+        currentWhole,
+        currentDecimal,
+        secondary,
+        background
+      );
     }
   }
 
-  _renderFull(background, statusText, targetWhole, targetDecimal, fillRatio, currentWhole, currentDecimal, secondary) {
+  _renderFull(
+    background,
+    statusText,
+    targetWhole,
+    targetDecimal,
+    fillRatio,
+    currentWhole,
+    currentDecimal,
+    secondary
+  ) {
     this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: block;
           width: 100%;
           height: 100%;
-          contain: layout style paint;
         }
         ha-card {
           width: 100%;
@@ -348,7 +443,7 @@ class GlassThermostatCard extends HTMLElement {
           box-sizing: border-box;
           font-family: -apple-system, BlinkMacSystemFont, sans-serif;
           color: white;
-          contain: layout style paint;
+          overflow: hidden;
         }
 
         .header {
@@ -419,12 +514,9 @@ class GlassThermostatCard extends HTMLElement {
         }
 
         .slider-wrapper {
+          position: relative;
           width: 100%;
           height: 240px;
-          border-radius: 28px;
-          box-shadow:
-            0 5px 10px -8px rgba(0,0,0,0.7),
-            0 5px 20px 10px rgba(0,0,0,0.3);
           transition: height 0.3s ease;
         }
 
@@ -435,32 +527,16 @@ class GlassThermostatCard extends HTMLElement {
         .slider-box {
           width: 100%;
           height: 100%;
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(20px) saturate(180%);
-          -webkit-backdrop-filter: blur(20px) saturate(180%);
-          box-shadow:
-            inset 0 1px 1px rgba(255, 255, 255, 0.3),
-            inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+          /* Squircle shape and backdrop-filter applied by LiquidGlass */
           position: relative;
           cursor: pointer;
           overflow: hidden;
-          contain: layout style;
           transform: translateZ(0);
           -webkit-tap-highlight-color: transparent;
-          /* Squircle mask for proper clipping */
-          -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M0,28 C0,6 6,0 28,0 L72,0 C94,0 100,6 100,28 L100,72 C100,94 94,100 72,100 L28,100 C6,100 0,94 0,72 Z' fill='black'/%3E%3C/svg%3E");
-          -webkit-mask-size: 100% 100%;
-          -webkit-mask-repeat: no-repeat;
-          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M0,28 C0,6 6,0 28,0 L72,0 C94,0 100,6 100,28 L100,72 C100,94 94,100 72,100 L28,100 C6,100 0,94 0,72 Z' fill='black'/%3E%3C/svg%3E");
-          mask-size: 100% 100%;
-          mask-repeat: no-repeat;
         }
 
         .card.expanded .slider-box {
           touch-action: none;
-          /* Taller squircle for expanded state */
-          -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M0,28 C0,6 6,0 28,0 L72,0 C94,0 100,6 100,28 L100,92 C100,114 94,120 72,120 L28,120 C6,120 0,114 0,92 Z' fill='black'/%3E%3C/svg%3E");
-          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cpath d='M0,28 C0,6 6,0 28,0 L72,0 C94,0 100,6 100,28 L100,92 C100,114 94,120 72,120 L28,120 C6,120 0,114 0,92 Z' fill='black'/%3E%3C/svg%3E");
         }
 
         .slider-fill {
@@ -600,7 +676,65 @@ class GlassThermostatCard extends HTMLElement {
     `;
   }
 
-  _updateValues(statusText, targetWhole, targetDecimal, fillRatio, currentWhole, currentDecimal, secondary, background) {
+  _applyGlassEffect() {
+    const sliderBox = this.shadowRoot.querySelector('.slider-box');
+    const sliderWrapper = this.shadowRoot.querySelector('.slider-wrapper');
+    if (!sliderBox) return;
+
+    // Clean up previous effect
+    if (this._liquidGlassEffect) {
+      this._liquidGlassEffect.destroy();
+      this._liquidGlassEffect = null;
+    }
+
+    // Delay until after layout to ensure dimensions are available
+    requestAnimationFrame(() => {
+      // Check if LiquidGlass module is available
+      if (window.LiquidGlass) {
+        // Calculate border radius (28% of smaller dimension, fallback to 67px for 240px height)
+        const w = sliderBox.clientWidth || 280;
+        const h = sliderBox.clientHeight || 240;
+        const borderRadius = Math.min(w, h) * 0.28;
+
+        // Use enhanced liquid glass effect with squircle
+        this._liquidGlassEffect = window.LiquidGlass.applyTo(sliderBox, {
+          width: w,
+          height: h,
+          rimContainer: sliderWrapper,
+          squircle: true,
+          borderRadius: borderRadius
+        });
+        console.log('[GlassThermostat] LiquidGlass effect applied, borderRadius:', borderRadius);
+      } else {
+        // Fallback to CSS-based glass effect
+        this._applyFallbackGlass(sliderBox);
+        console.log('[GlassThermostat] CSS fallback glass effect applied');
+      }
+    });
+  }
+
+  _applyFallbackGlass(element) {
+    // Basic CSS glass effect
+    element.style.backdropFilter = 'blur(12px) saturate(120%) contrast(1.1) brightness(1.05)';
+    element.style.webkitBackdropFilter = 'blur(12px) saturate(120%) contrast(1.1) brightness(1.05)';
+    element.style.background = 'rgba(255, 255, 255, 0.08)';
+    element.style.boxShadow = `
+      inset 0 1px 1px rgba(255, 255, 255, 0.3),
+      inset 0 -1px 1px rgba(0, 0, 0, 0.1),
+      0 8px 32px rgba(0, 0, 0, 0.3)
+    `.replace(/\s+/g, ' ').trim();
+  }
+
+  _updateValues(
+    statusText,
+    targetWhole,
+    targetDecimal,
+    fillRatio,
+    currentWhole,
+    currentDecimal,
+    secondary,
+    background
+  ) {
     const statusEl = this.shadowRoot.querySelector('.status-text');
     const targetEl = this.shadowRoot.querySelector('.target-temp');
     const fillEl = this.shadowRoot.querySelector('.slider-fill');
@@ -615,7 +749,8 @@ class GlassThermostatCard extends HTMLElement {
 
     if (targetEl && !this._isDragging) {
       targetEl.innerHTML = `${targetWhole}<span class="decimal">.${targetDecimal}</span><span class="degree">⭘</span>`;
-      targetEl.style.color = this._expanded && fillRatio > 0.75 ? '#3A3A3C' : 'white';
+      targetEl.style.color =
+        this._expanded && fillRatio > 0.75 ? '#3A3A3C' : 'white';
     }
 
     if (fillEl && !this._isDragging) {
@@ -653,16 +788,18 @@ class GlassThermostatCardEditor extends HTMLElement {
       {
         name: 'entity',
         required: true,
-        selector: { entity: { domain: 'climate' } }
+        selector: { entity: { domain: 'climate' } },
       },
       {
         name: 'secondary_entity',
-        selector: { entity: { domain: ['sensor', 'input_number', 'counter', 'number'] } }
+        selector: {
+          entity: { domain: ['sensor', 'input_number', 'counter', 'number'] },
+        },
       },
       {
         name: 'secondary_label',
-        selector: { text: {} }
-      }
+        selector: { text: {} },
+      },
     ];
   }
 
@@ -698,48 +835,56 @@ class GlassThermostatCardEditor extends HTMLElement {
       {
         name: 'entity',
         required: true,
-        selector: { entity: { domain: 'climate' } }
+        selector: { entity: { domain: 'climate' } },
       },
       {
         name: 'secondary_entity',
         label: 'Secondary Info Entity',
-        selector: { entity: { domain: ['sensor', 'input_number', 'counter', 'number'] } }
+        selector: {
+          entity: { domain: ['sensor', 'input_number', 'counter', 'number'] },
+        },
       },
       {
         name: 'secondary_label',
         label: 'Secondary Info Label',
-        selector: { text: {} }
-      }
+        selector: { text: {} },
+      },
     ];
     form.computeLabel = (schema) => {
       const labels = {
         entity: 'Climate Entity',
         secondary_entity: 'Secondary Info Entity (optional)',
-        secondary_label: 'Secondary Info Label (optional)'
+        secondary_label: 'Secondary Info Label (optional)',
       };
       return labels[schema.name] || schema.name;
     };
 
     form.addEventListener('value-changed', (e) => {
       this._config = e.detail.value;
-      this.dispatchEvent(new CustomEvent('config-changed', {
-        detail: { config: this._config },
-        bubbles: true,
-        composed: true
-      }));
+      this.dispatchEvent(
+        new CustomEvent('config-changed', {
+          detail: { config: this._config },
+          bubbles: true,
+          composed: true,
+        })
+      );
     });
 
     this.appendChild(form);
   }
 }
 
-customElements.define('glass-thermostat-card-editor', GlassThermostatCardEditor);
+customElements.define(
+  'glass-thermostat-card-editor',
+  GlassThermostatCardEditor
+);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'glass-thermostat-card',
   name: 'Glass Thermostat Card',
-  description: 'Liquid glass style thermostat with collapsible temperature slider',
+  description:
+    'Liquid glass style thermostat with collapsible temperature slider',
   preview: true,
 });
 

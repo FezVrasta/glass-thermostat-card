@@ -5,6 +5,7 @@ A beautiful liquid glass style thermostat card for Home Assistant with smooth an
 ## Features
 
 - Liquid glass aesthetic with dynamic backgrounds that respond to HVAC state
+- **Refractive Glass Effect**: Optional integration with the [Liquid Glass](https://github.com/FezVrasta/liquid-glass) HACS addon for enhanced refraction and squircle corners
 - Touch-friendly vertical slider for temperature adjustment
 - Expandable card with collapsible slider
 - Secondary entity display (power consumption, humidity, etc.)
@@ -19,7 +20,8 @@ A beautiful liquid glass style thermostat card for Home Assistant with smooth an
 2. Click the three dots menu and select "Custom repositories"
 3. Add this repository URL and select "Lovelace" as the category
 4. Search for "Glass Thermostat Card" and install
-5. Restart Home Assistant
+5. **Optional**: For the enhanced refraction effect, also install [Liquid Glass](https://github.com/FezVrasta/liquid-glass)
+6. Restart Home Assistant
 
 ### Manual
 
@@ -74,3 +76,6 @@ The card automatically adjusts its background gradient based on HVAC state:
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
+
+> [!IMPORTANT]
+> This card relies on advanced SVG filters and CSS features for its glass effects. For best results, use a **Chromium-based browser** (Chrome, Edge, Brave, etc.). Some visual features may be missing or look different in Firefox or Safari.
