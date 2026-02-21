@@ -2,15 +2,17 @@
 
 A beautiful liquid glass style thermostat card for Home Assistant with smooth animations and touch-friendly controls.
 
-![Hero](idle.png)
+<p align="center">
+  <img src="idle.png" width="32%" />
+  <img src="off.png" width="32%" />
+  <img src="slider.png" width="32%" />
+</p>
 
 ## Features
 
 - **Refractive Glass Effect**: Optional integration with the [Liquid Glass](https://github.com/FezVrasta/liquid-glass) HACS addon for enhanced refraction and squircle corners
 - **Dynamic Background Colors**: Background gradients respond to HVAC state (Heating, Cooling, Idle, Off)
-  ![States](off.png)
 - **Touch-Friendly Controls**: Smooth vertical slider for temperature adjustment
-  ![Slider](slider.png)
 - **Expandable Design**: Collapsible slider for a compact or detailed view
 - **Secondary Entity Display**: Show power consumption, humidity, or any other sensor
 - **Localized Status**: Automatically translates HVAC states and status text
