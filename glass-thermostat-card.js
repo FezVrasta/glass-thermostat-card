@@ -233,61 +233,76 @@ class GlassThermostatCard extends HTMLElement {
   }
 
   _getColors(state, hvacAction) {
-    const isHeating = hvacAction === 'heating';
-    const isCooling = hvacAction === 'cooling';
-    const isHeatMode =
-      state === 'heat' || state === 'heat_cool' || state === 'auto';
-    const isCoolMode = state === 'cool';
+    const gray = {
+      primary: '#888888',
+      secondary: '#666666',
+      accent: '#aaaaaa',
+      dark: '#444444',
+      shadow: '#333355',
+    };
+    const blue = {
+      primary: '#4da6ff',
+      secondary: '#0066cc',
+      accent: '#66ccff',
+      dark: '#003366',
+      shadow: '#001a33',
+    };
+    const red = {
+      primary: '#ff4d4d',
+      secondary: '#cc0000',
+      accent: '#ff3333',
+      dark: '#660000',
+      shadow: '#330000',
+    };
+    const lightBlue = {
+      primary: '#66b3ff',
+      secondary: '#3399ff',
+      accent: '#99ccff',
+      dark: '#004080',
+      shadow: '#002244',
+    };
+    const orange = {
+      primary: '#ff9933',
+      secondary: '#ff6600',
+      accent: '#ffcc66',
+      dark: '#994400',
+      shadow: '#662200',
+    };
 
     if (state === 'off') {
-      return {
-        primary: '#888888',
-        secondary: '#666666',
-        accent: '#aaaaaa',
-        dark: '#444444',
-        shadow: '#333355',
-      };
-    } else if (isCooling) {
-      return {
-        primary: '#4da6ff',
-        secondary: '#0066cc',
-        accent: '#66ccff',
-        dark: '#003366',
-        shadow: '#001a33',
-      };
-    } else if (isHeating) {
-      return {
-        primary: '#ff4d4d',
-        secondary: '#cc0000',
-        accent: '#ff3333',
-        dark: '#660000',
-        shadow: '#330000',
-      };
-    } else if (isCoolMode) {
-      return {
-        primary: '#66b3ff',
-        secondary: '#3399ff',
-        accent: '#99ccff',
-        dark: '#004080',
-        shadow: '#002244',
-      };
-    } else if (isHeatMode) {
-      return {
-        primary: '#ff9933',
-        secondary: '#ff6600',
-        accent: '#ffcc66',
-        dark: '#994400',
-        shadow: '#662200',
-      };
-    } else {
-      return {
-        primary: '#ff9933',
-        secondary: '#ff6600',
-        accent: '#ffcc66',
-        dark: '#994400',
-        shadow: '#662200',
-      };
+      return gray;
     }
+
+    // Prefer hvac_action when the entity reports one -- it reflects what
+    // the system is actually doing right now, not just which mode it's
+    // set to. This matters most for auto/heat_cool thermostats, where the
+    // mode alone can't tell you whether the last real action was heating
+    // or cooling.
+    if (hvacAction === 'cooling') {
+      return blue;
+    } else if (hvacAction === 'heating') {
+      return red;
+    } else if (
+      hvacAction === 'idle' ||
+      hvacAction === 'fan' ||
+      hvacAction === 'drying'
+    ) {
+      // Genuinely idle right now -- don't guess a direction from the mode.
+      return gray;
+    }
+
+    // No hvac_action reported by this entity -- fall back to mode, so
+    // single-mode thermostats (heat-only, cool-only) that don't expose
+    // hvac_action still get a sensible color.
+    if (state === 'cool') {
+      return lightBlue;
+    } else if (state === 'heat') {
+      return orange;
+    }
+
+    // auto/heat_cool with no hvac_action available -- can't tell
+    // direction, don't guess.
+    return gray;
   }
 
   _getBackground(colors) {
